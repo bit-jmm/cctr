@@ -1,5 +1,6 @@
 .DS_Store
 .*.swp
+data/
 # Compiled Object files
 *.slo
 *.lo

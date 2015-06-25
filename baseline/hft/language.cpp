@@ -5,6 +5,8 @@
 #include "omp.h"
 #include "lbfgs.h"
 #include "sys/time.h"
+#include <getopt.h>
+#include <string>
 
 #include "language.hpp"
 using namespace std;
@@ -559,15 +561,77 @@ void topicCorpus::train(int emIterations, int gradIterations)
   }
 }
 
+void parse_parameters(const int argc, char* const* argv, vector<string> &inputfiles,
+    double &lambda, int &K, char* &modelPath, char* &predictionPath)
+{
+
+  static struct option long_options[] =
+  {
+    {"inputfiles", required_argument, 0, 'i'},
+    {"factor-num", required_argument, 0, 'k'},
+    {"lambda", required_argument, 0, 'l'},
+    {"save-model-path", required_argument, 0, 'm'},
+    {"predict-result-path", required_argument, 0, 'p'}
+  };
+
+  /* getopt_long stores the option index here. */
+  int option_index = 0;
+  int c = 0;
+
+  while(c != -1)
+  {
+    c = getopt_long(argc, argv, "i:k:l:m:p:", long_options, &option_index);
+
+    switch(c)
+    {
+      case 'i':
+        inputfiles.push_back(optarg);
+        while(optind<argc) {
+          if(argv[optind][0]!='-')
+            inputfiles.push_back(argv[optind++]);
+          else
+            break;
+        }
+        break;
+
+      case 'k':
+        K = atoi(optarg);
+        break;
+
+      case 'l':
+        lambda = atof(optarg);
+        break;
+
+      case 'm':
+        modelPath = optarg;
+        break;
+
+      case 'p':
+        predictionPath = optarg;
+        break;
+
+      case '?':
+        /* getopt_long already printed an error message. */
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  /* Print any remaining command line arguments (not options). */
+  if (optind < argc)
+  {
+    printf("non-option ARGV-elements: ");
+    while(optind < argc)
+      printf("%s ", argv[optind++]);
+    putchar('\n');
+  }
+}
+
 int main(int argc, char** argv)
 {
   srand(0);
-
-  if (argc < 2)
-  {
-    printf("An input file is required\n");
-    exit(0);
-  }
 
   double latentReg = 0;
   double lambda = 0.1;
@@ -575,25 +639,34 @@ int main(int argc, char** argv)
   char* modelPath = "model.out";
   char* predictionPath = "predictions.out";
 
-  if (argc == 7)
-  {
-    latentReg = atof(argv[2]);
-    lambda = atof(argv[3]);
-    K = atoi(argv[4]);
-    modelPath = argv[5];
-    predictionPath = argv[6];
-  }
+  vector<string> inputfiles;
 
-  printf("corpus = %s\n", argv[1]);
+  parse_parameters(argc, (char * const *)argv, inputfiles, lambda, K, modelPath, predictionPath);
+
   printf("latentReg = %f\n", latentReg);
   printf("lambda = %f\n", lambda);
   printf("K = %d\n", K);
 
-  corpus corp(argv[1], 0);
-  topicCorpus ec(&corp, K, // K
-                 latentReg, // latent topic regularizer
-                 lambda); // lambda
-  ec.train(50, 50);
+  if(inputfiles.empty())
+  {
+    printf("Please input training files!\n");
+    exit(0);
+  }
+  else
+  {
+    printf("training files are: ");
+    for(vector<string>::const_iterator p=inputfiles.begin(); p!=inputfiles.end(); ++p)
+    {
+      cout<<*p<<" ";
+    }
+    printf("\n");
+  }
+
+  corpus corp(inputfiles, 100);
+  //topicCorpus ec(&corp, K, // K
+                 //latentReg, // latent topic regularizer
+                 //lambda); // lambda
+  //ec.train(50, 50);
   //ec.save(modelPath, predictionPath);
 
   return 0;

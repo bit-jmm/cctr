@@ -6,6 +6,7 @@
 #include "math.h"
 #include "string.h"
 #include <string>
+#include <cctype>
 #include <iostream>
 #include "omp.h"
 #include "map"
@@ -16,6 +17,10 @@
 #include "lbfgs.h"
 #include "sstream"
 #include "gzstream.h"
+#include "json.hpp"
+
+// for convenience
+using json = nlohmann::json;
 
 /// Safely open a file
 FILE* fopen_(const char* p, const char* m)
@@ -63,7 +68,23 @@ template<typename T> int sgn(T val)
 class corpus
 {
 public:
-  corpus(std::string voteFile, int max)
+  std::vector<vote*>* V;
+
+  int nUsers; // Number of users
+  int nBeers; // Number of items
+  int nWords; // Number of words
+
+  std::map<std::string, int> userIds; // Maps a user's string-valued ID to an integer
+  std::map<std::string, int> beerIds; // Maps an item's string-valued ID to an integer
+
+  std::map<int, std::string> rUserIds; // Inverse of the above map
+  std::map<int, std::string> rBeerIds;
+
+  std::map<std::string, int> wordCount; // Frequency of each word in the corpus
+  std::map<std::string, int> wordId; // Map each word to its integer ID
+  std::map<int, std::string> idWord; // Inverse of the above map
+
+  corpus(std::vector<std::string> voteFiles, int max)
   {
     std::map<std::string, int> uCounts;
     std::map<std::string, int> bCounts;
@@ -75,47 +96,52 @@ public:
     int nw;
     int nRead = 0;
 
-    igzstream in;
-    in.open(voteFile.c_str());
-    std::string line;
     std::string sWord;
-    
-    // Read the input file. The first time the file is read it is only to compute word counts, in order to select the top "maxWords" words to include in the dictionary
-    while (std::getline(in, line))
+
+    // Read the input files. The first time the file is read it is only to compute word counts, in order to select the top "maxWords" words to include in the dictionary
+
+    std::vector<std::string> lines;
+    std::string line;
+    for (std::vector<std::string>::iterator it=voteFiles.begin(); it!=voteFiles.end();++it)
     {
-      std::stringstream ss(line);
-      ss >> uName >> bName >> value >> voteTime >> nw;
-      if (value > 5 or value < 0)
-      { // Ratings should be in the range [0,5]
-        printf("Got bad value of %f\nOther fields were %s %s %d\n", value, uName.c_str(), bName.c_str(), voteTime);
-        exit(0);
-      }
-      for (int w = 0; w < nw; w++)
+      lines = readLines(*it, max);
+      for(std::vector<std::string>::iterator it=lines.begin(); it!=lines.end();++it)
       {
-        ss >> sWord;
-        if (wordCount.find(sWord) == wordCount.end())
-          wordCount[sWord] = 0;
-        wordCount[sWord]++;
+        line = *it;
+        std::cout << line << std::endl;
+        std::stringstream ss(line);
+        ss >> uName >> bName >> value >> voteTime >> nw;
+        if (value > 5 or value < 0)
+        { // Ratings should be in the range [0,5]
+          printf("Got bad value of %f\nOther fields were %s %s %d\n", value, uName.c_str(), bName.c_str(), voteTime);
+          exit(0);
+        }
+        for (int w = 0; w < nw; w++)
+        {
+          ss >> sWord;
+          if (wordCount.find(sWord) == wordCount.end())
+            wordCount[sWord] = 0;
+          wordCount[sWord]++;
+        }
+
+        if (uCounts.find(uName) == uCounts.end())
+          uCounts[uName] = 0;
+        if (bCounts.find(bName) == bCounts.end())
+          bCounts[bName] = 0;
+        uCounts[uName]++;
+        bCounts[bName]++;
+
+        nRead++;
+        if (nRead % 100000 == 0)
+        {
+          printf(".");
+          fflush(stdout);
+        }
+
+        if (max > 0 and (int) nRead >= max)
+          break;
       }
-
-      if (uCounts.find(uName) == uCounts.end())
-        uCounts[uName] = 0;
-      if (bCounts.find(bName) == bCounts.end())
-        bCounts[bName] = 0;
-      uCounts[uName]++;
-      bCounts[bName]++;
-
-      nRead++;
-      if (nRead % 100000 == 0)
-      {
-        printf(".");
-        fflush(stdout);
-      }
-
-      if (max > 0 and (int) nRead >= max)
-        break;
     }
-    in.close();
 
     printf("\nnUsers = %d, nItems = %d, nRatings = %d\n", (int) uCounts.size(), (int) bCounts.size(), nRead);
 
@@ -158,66 +184,123 @@ public:
     }
 
     // Re-read the entire file, this time building structures from those words in the dictionary
-    igzstream in2;
-    in2.open(voteFile.c_str());
-    nRead = 0;
-    while (std::getline(in2, line))
+    for (std::vector<std::string>::iterator it=voteFiles.begin(); it!=voteFiles.end();++it)
     {
-      std::stringstream ss(line);
-      ss >> uName >> bName >> value >> voteTime >> nw;
-
-      for (int w = 0; w < nw; w++)
+      lines = readLines(*it, max);
+      for(std::vector<std::string>::iterator it=lines.begin(); it!=lines.end();++it)
       {
-        ss >> sWord;
-        if (wordId.find(sWord) != wordId.end())
-          v->words.push_back(wordId[sWord]);
-      }
+        line = *it;
+        std::stringstream ss(line);
+        ss >> uName >> bName >> value >> voteTime >> nw;
 
-      if (uCounts[uName] >= userMin)
-      {
-        if (userIds.find(uName) == userIds.end())
+        for (int w = 0; w < nw; w++)
         {
-          rUserIds[nUsers] = uName;
-          userIds[uName] = nUsers++;
+          ss >> sWord;
+          if (wordId.find(sWord) != wordId.end())
+            v->words.push_back(wordId[sWord]);
         }
-        v->user = userIds[uName];
-      }
-      else
-        v->user = 0;
 
-      if (bCounts[bName] >= beerMin)
-      {
-        if (beerIds.find(bName) == beerIds.end())
+        if (uCounts[uName] >= userMin)
         {
-          rBeerIds[nBeers] = bName;
-          beerIds[bName] = nBeers++;
+          if (userIds.find(uName) == userIds.end())
+          {
+            rUserIds[nUsers] = uName;
+            userIds[uName] = nUsers++;
+          }
+          v->user = userIds[uName];
         }
-        v->item = beerIds[bName];
+        else
+          v->user = 0;
+
+        if (bCounts[bName] >= beerMin)
+        {
+          if (beerIds.find(bName) == beerIds.end())
+          {
+            rBeerIds[nBeers] = bName;
+            beerIds[bName] = nBeers++;
+          }
+          v->item = beerIds[bName];
+        }
+        else
+          v->item = 0;
+
+        v->value = value;
+        v->voteTime = voteTime;
+
+        V->push_back(v);
+        v = new vote();
       }
-      else
-        v->item = 0;
-
-      v->value = value;
-      v->voteTime = voteTime;
-
-      V->push_back(v);
-      v = new vote();
-
-      nRead++;
-      if (nRead % 100000 == 0)
-      {
-        printf(".");
-        fflush( stdout);
-      }
-
-      if (max > 0 and (int) nRead >= max)
-        break;
     }
 
     printf("\n");
     delete v;
+  }
 
-    in2.close();
+  std::vector<std::string> readLines(std::string filename, int max)
+  {
+      std::vector<std::string> lines;
+      int nRead = 0;
+      igzstream in;
+      in.open(filename.c_str());
+      std::string line;
+      if (filename.find("json") == std::string::npos)
+      {
+        while (std::getline(in, line))
+        {
+          lines.push_back(line);
+          nRead++;
+          if (nRead % 100000 == 0)
+          {
+            printf(".");
+            fflush(stdout);
+          }
+
+          if (max > 0 and (int) nRead >= max)
+            break;
+        }
+        in.close();
+      }
+      else
+      {
+        while (std::getline(in, line))
+        {
+          auto j = json::parse(line);
+          std::string uid = j["reviewerID"];
+          std::string iid = j["asin"];
+          float rating = j["overall"];
+          long rtime = j["unixReviewTime"];
+          std::string reviewText = j["reviewText"];
+
+          const char* str = reviewText.c_str();
+          int word_count = 0; // Holds number of words
+          for(int i = 0; str[i] != '\0'; i++)
+          {
+            if (isspace(str[i])) //Checking for spaces
+            {
+              word_count++;
+              i++;
+              while(str[i] != '\0' && isspace(str[i])) i++;
+              i--;
+            }
+          }
+
+          line = uid + " " + iid + " " + std::to_string(rating) + " " +
+            std::to_string(rtime) + " " + std::to_string(word_count) + " " + reviewText;
+          lines.push_back(line);
+
+          nRead++;
+          if (nRead % 100000 == 0)
+          {
+            printf(".");
+            fflush(stdout);
+          }
+
+          if (max > 0 and (int) nRead >= max)
+            break;
+        }
+        in.close();
+      }
+      return lines;
   }
 
   ~corpus()
@@ -227,19 +310,4 @@ public:
     delete V;
   }
 
-  std::vector<vote*>* V;
-
-  int nUsers; // Number of users
-  int nBeers; // Number of items
-  int nWords; // Number of words
-
-  std::map<std::string, int> userIds; // Maps a user's string-valued ID to an integer
-  std::map<std::string, int> beerIds; // Maps an item's string-valued ID to an integer
-
-  std::map<int, std::string> rUserIds; // Inverse of the above map
-  std::map<int, std::string> rBeerIds;
-
-  std::map<std::string, int> wordCount; // Frequency of each word in the corpus
-  std::map<std::string, int> wordId; // Map each word to its integer ID
-  std::map<int, std::string> idWord; // Inverse of the above map
 };

@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -Wall -O3 -fopenmp -Iliblbfgs-1.10/include -Igzstream
+CFLAGS = -Wall -std=c++11 -O3 -fopenmp -Iliblbfgs-1.10/include -Igzstream
 LDFLAGS = -llbfgs -lgomp -lgzstream -lz -lstdc++ -Lliblbfgs-1.10/lib/.libs -Lgzstream
 
 all: train
@@ -14,6 +14,4 @@ train: language.cpp language.hpp common.hpp liblbfgs-1.10/lib/.libs/liblbfgs.so 
 	$(CC) $(CFLAGS) -o train language.cpp gzstream/gzstream.o $(LDFLAGS)
 
 clean:
-	cd liblbfgs-1.10 && make clean
-	cd gzstream && make clean
 	rm train
