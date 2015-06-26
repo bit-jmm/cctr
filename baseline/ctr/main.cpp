@@ -95,7 +95,7 @@ int main(int argc, char* argv[]) {
   char*  theta_init_path = NULL;
   char*  beta_init_path = NULL;
 
-  int cc = 0; 
+  int cc = 0;
   while(true) {
     cc = getopt_long(argc, argv, short_options, long_options, NULL);
     switch(cc) {
@@ -137,7 +137,7 @@ int main(int argc, char* argv[]) {
         break;
       case 'm':
         max_iter =  atoi(optarg);
-        break;    
+        break;
       case 'k':
         num_factors = atoi(optarg);
         break;
@@ -164,7 +164,7 @@ int main(int argc, char* argv[]) {
 
   /// print information
   printf("\n************************************************************************************************\n");
-  
+
   if (!dir_exists(directory)) make_directory(directory);
   printf("result directory: %s\n", directory);
 
@@ -197,7 +197,7 @@ int main(int argc, char* argv[]) {
       exit(-1);
     }
     printf("mult file: %s\n", mult_path);
-      
+
     if (theta_init_path == NULL) {
       printf("topic proportions file must be provided ...\n");
       exit(-1);
@@ -234,21 +234,21 @@ int main(int argc, char* argv[]) {
   ctr_hyperparameter ctr_param;
   ctr_param.set(a, b, lambda_u, lambda_v, learning_rate, alpha_smooth,
       random_seed, max_iter, save_lag, theta_opt, ctr_run, lda_regression);
-  sprintf(filename, "%s/settings.txt", directory); 
+  sprintf(filename, "%s/settings.txt", directory);
   ctr_param.save(filename);
-  
+
   /// init random numbe generator
   RANDOM_NUMBER = new_random_number_generator(random_seed);
 
   // read users
   printf("reading user matrix from %s ...\n", user_path);
-  c_data* users = new c_data(); 
+  c_data* users = new c_data();
   users->read_data(user_path);
   int num_users = (int)users->m_vec_data.size();
 
   // read items
   printf("reading item matrix from %s ...\n", item_path);
-  c_data* items = new c_data(); 
+  c_data* items = new c_data();
   items->read_data(item_path);
   int num_items = (int)items->m_vec_data.size();
 

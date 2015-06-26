@@ -20,14 +20,14 @@ struct ctr_hyperparameter {
   int    theta_opt;
   int    ctr_run;
   int    lda_regression;
-  
-  void set(double aa, double bb, 
-           double lu, double lv, 
+
+  void set(double aa, double bb,
+           double lu, double lv,
            double lr, double as,
-           int rs, int mi, int sl,    
+           int rs, int mi, int sl,
            int to, int cr, int lda_r) {
-    a = aa; b = bb; 
-    lambda_u = lu; lambda_v = lv; 
+    a = aa; b = bb;
+    lambda_u = lu; lambda_v = lv;
     learning_rate = lr;
     alpha_smooth = as;
     random_seed = rs; max_iter = mi;
