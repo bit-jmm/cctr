@@ -4,15 +4,12 @@
 #include <sstream>
 #include "utils.h"
 #include "../../libs/json.hpp"
-#include <boost/algorithm/string.hpp>
 using json = nlohmann::json;
 using namespace std;
-namespace fs = boost::filesystem;
-namespace ba = boost::algorithm;
 
 gsl_rng * RANDOM_NUMBER = NULL;
 
-void json2txt(std::string source_file, std::string dest_file)
+void json2txt(string source_file, string dest_file)
 {
   igzstream in;
   in.open(source_file.c_str());
@@ -24,7 +21,7 @@ void json2txt(std::string source_file, std::string dest_file)
   long wordCount = 0;
 
   int nRead = 0;
-  while (std::getline(in, line))
+  while (getline(in, line))
   {
     auto j = json::parse(line);
     string uid = j["reviewerID"];
@@ -46,7 +43,6 @@ void json2txt(std::string source_file, std::string dest_file)
       parsed_review_text += *it + " ";
     }
     wordCount += words->size();
-    ba::trim_right(parsed_review_text);
 
     ostringstream out;
     out << uid << " " << iid << " " << rating << " " << rtime << " " << words->size() << " " << parsed_review_text;
@@ -88,20 +84,35 @@ int main(int argc, char* argv[])
     make_directory(dest_path);
   }
 
-  fs::path dest_bp(dest_path);
+  vector<string> *files = files_in_path((const char *)source_path);
 
-  vector<fs::path> *files = files_in_path((const char *)source_path);
-
-  for(vector<fs::path>::const_iterator it = files->begin(); it != files->end(); it++)
+  for(vector<string>::const_iterator it = files->begin(); it != files->end(); it++)
   {
-    //concat dest_path
-    string dfilename = it->filename().string();
+    string dfilename = *it;
     dfilename.replace(dfilename.find("json"), 4, "txt");
-    fs::path dfile(dest_bp);
-    fs::path fn(dfilename);
-    dfile /= fn;
-    cout << *it << " : " << dfile << endl;
-    json2txt(it->string(), dfile.string());
+    string dfilepath;
+    string sfilepath;
+
+    if(source_path[strlen(source_path)-1] == '/')
+    {
+      sfilepath = string(source_path) + *it;
+    }
+    else
+    {
+      sfilepath = string(source_path) + "/" + *it;
+    }
+
+    if(dest_path[strlen(dest_path)-1] == '/')
+    {
+      dfilepath = string(dest_path) + dfilename;
+    }
+    else
+    {
+      dfilepath = string(dest_path) + "/" + dfilename;
+    }
+    cout << sfilepath << " : " << dfilepath << endl;
+    json2txt(sfilepath, dfilepath);
   }
+
   return 0;
 }

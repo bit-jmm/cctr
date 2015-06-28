@@ -382,47 +382,30 @@ int dir_exists(const char *dname) {
  * return all files in path(filepath or directory) if path exist
  * empty vector if not exist or empty directory. */
 
-std::vector<boost::filesystem::path> * files_in_path(const char * pathname)
+std::vector<std::string> * files_in_path(const char * pathname)
 {
-  std::vector<boost::filesystem::path> * files = new std::vector<boost::filesystem::path>();
-  boost::filesystem::path p(pathname);   // p reads clearer than argv[1] in the following code
+  std::vector<std::string> * files = new std::vector<std::string>();
 
-  try
+  DIR *dir;
+  struct dirent *ent;
+  if ((dir = opendir(pathname)) != NULL)
   {
-    if (boost::filesystem::exists(p))    // does p actually exist?
-    {
-      if (boost::filesystem::is_regular_file(p))        // is p a regular file?
+    /* print all the files and directories within directory */
+    while ((ent = readdir(dir)) != NULL) {
+      std::string file(ent->d_name);
+      if(file.find("json.gz") != std::string::npos)
       {
-        if (p.string().find("json") != std::string::npos)
-        {
-          files->push_back(p);
-        }
+        files->push_back(file);
       }
-
-      else if (boost::filesystem::is_directory(p))      // is p a directory?
-      {
-        boost::filesystem::directory_iterator it(p);
-        while(it != boost::filesystem::directory_iterator())
-        {
-          if (it->path().string().find("json") != std::string::npos)
-          {
-            files->push_back(it->path());
-          }
-          it++;
-        }
-      }
-
-      else
-        std::cout << p << " exists, but is neither a regular file nor a directory\n";
     }
-    else
-      std::cout << p << " does not exist\n";
+    closedir(dir);
   }
-  catch (const boost::filesystem::filesystem_error& ex)
+  else
   {
-    std::cout << ex.what() << '\n';
+    /* could not open directory */
+    perror ("error, cannot open this path");
+    return files;
   }
-
   return files;
 }
 
@@ -503,12 +486,16 @@ unsigned long int runiform_int(unsigned long int n) {
 std::vector<std::string>* tokenizer(std::string st)
 {
   std::vector<std::string>* tokens = new std::vector<std::string>();
-  boost::tokenizer<> tok(st);
-  for(boost::tokenizer<>::iterator it=tok.begin(); it!=tok.end(); ++it)
+  char * c_st = (char *) st.c_str();
+  char * pch;
+  char * splitchars = " (),.-\":;?!#$%^&*=+\\/|<>[]{}`~\t";
+  pch = strtok(c_st, splitchars);
+  while (pch != NULL)
   {
-    std::string word(*it);
+    std::string word(pch);
     std::transform(word.begin(), word.end(), word.begin(), ::tolower);
     tokens->push_back(word);
+    pch = strtok(NULL, splitchars);
   }
   return tokens;
 }

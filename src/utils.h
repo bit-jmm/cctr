@@ -14,6 +14,7 @@
 #include <gsl/gsl_sf_psi.h>
 #include <math.h>
 #include <string>
+#include <vector>
 #include <assert.h>
 #include <time.h>
 #include <sys/stat.h>
@@ -21,9 +22,8 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <memory.h>
+#include <algorithm>
 #include "gzstream.h"
-#include <boost/filesystem.hpp>
-#include <boost/tokenizer.hpp>
 
 
 #define outlog(format, args...) \
@@ -109,7 +109,7 @@ double log_normalize(gsl_vector* x);
 double vnormalize(gsl_vector* x);
 
 int dir_exists(const char *dname);
-std::vector<boost::filesystem::path> * files_in_path(const char * pathname);
+std::vector<std::string> * files_in_path(const char * pathname);
 bool file_exists(const char * filename);
 void make_directory(const char* name);
 
