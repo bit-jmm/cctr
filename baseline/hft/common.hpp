@@ -17,7 +17,7 @@
 #include "lbfgs.h"
 #include "sstream"
 #include "gzstream.h"
-#include "json.hpp"
+#include "../../libs/json.hpp"
 
 // for convenience
 using json = nlohmann::json;
