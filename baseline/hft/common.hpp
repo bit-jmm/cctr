@@ -108,7 +108,6 @@ public:
       for(std::vector<std::string>::iterator it=lines.begin(); it!=lines.end();++it)
       {
         line = *it;
-        std::cout << line << std::endl;
         std::stringstream ss(line);
         ss >> uName >> bName >> value >> voteTime >> nw;
         if (value > 5 or value < 0)

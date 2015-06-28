@@ -662,12 +662,12 @@ int main(int argc, char** argv)
     printf("\n");
   }
 
-  corpus corp(inputfiles, 100);
-  //topicCorpus ec(&corp, K, // K
-                 //latentReg, // latent topic regularizer
-                 //lambda); // lambda
-  //ec.train(50, 50);
-  //ec.save(modelPath, predictionPath);
+  corpus corp(inputfiles, 5000);
+  topicCorpus ec(&corp, K, // K
+                 latentReg, // latent topic regularizer
+                 lambda); // lambda
+  ec.train(50, 50);
+  ec.save(modelPath, predictionPath);
 
   return 0;
 }
