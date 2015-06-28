@@ -1,6 +1,7 @@
 CC = g++
 CFLAGS = -Wall -std=c++11 -O3 -fopenmp -I ../libs/gzstream
-LDFLAGS = -lgsl -lm -lgslcblas -lgomp -lgzstream -lboost_system -lboost_filesystem -lz -lstdc++  -L ../libs/gzstream
+LDFLAGS = -lgsl -lm -lgslcblas -lgomp -lgzstream -lboost_system -lboost_filesystem -lz -lstdc++\
+					-L ../libs/gzstream -L ../libs/boost
 
 LSOURCE = json2txt.cpp utils.cpp
 LHEADER = utils.h
