@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -Wall -std=c++11 -O3 -fopenmp -I ../libs/gzstream
+CFLAGS = -Wall -static -std=c++11 -O3 -fopenmp -I ../libs/gzstream
 LDFLAGS = -lgsl -lm -lgslcblas -lgomp -lgzstream -lz -lstdc++\
 					-L ../libs/gzstream
 
