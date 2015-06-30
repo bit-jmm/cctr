@@ -2,11 +2,12 @@
 #include <string>
 #include <iostream>
 #include <sstream>
+#include <omp.h>
 #include "utils.h"
 #include "../../libs/json.hpp"
 using json = nlohmann::json;
 using namespace std;
-
+#define NUM_THREADS 10
 gsl_rng * RANDOM_NUMBER = NULL;
 
 void json2txt(string source_file, string dest_file)
@@ -19,40 +20,64 @@ void json2txt(string source_file, string dest_file)
   map<string, int> uCount;
   map<string, int> iCount;
   long wordCount = 0;
+  vector<string> lines;
 
-  int nRead = 0;
   while (getline(in, line))
   {
-    auto j = json::parse(line);
-    string uid = j["reviewerID"];
-    if(uCount.find(uid) == uCount.end())
-      uCount[uid] = 1;
+    lines.push_back(line);
+  }
 
+  omp_set_num_threads(NUM_THREADS);
+  int nRead = 0, i;
+  int rating_num = lines.size();
+#pragma omp parallel for
+  for (i=0; i<rating_num; i++)
+  {
+    auto j = json::parse(lines[i]);
+
+    if(j["reviewerID"].is_null() || j["asin"].is_null() ||
+        j["overall"].is_null() || j["unixReviewTime"].is_null() ||
+        j["reviewText"].is_null())
+    {
+      continue;
+    }
+    string uid = j["reviewerID"];
     string iid = j["asin"];
-    if(iCount.find(iid) == iCount.end())
-      iCount[iid] = 1;
 
     float rating = j["overall"];
     long rtime = j["unixReviewTime"];
     string reviewText = j["reviewText"];
+#pragma omp critical
+    {
+      if(uCount.find(uid) == uCount.end())
+        uCount[uid] = 1;
 
+      if(iCount.find(iid) == iCount.end())
+        iCount[iid] = 1;
+    }
     vector<string> * words = tokenizer(reviewText);
     string parsed_review_text = "";
     for(vector<string>::iterator it=words->begin(); it!=words->end(); ++it)
     {
       parsed_review_text += *it + " ";
     }
-    wordCount += words->size();
+#pragma omp critical
+    {
+      wordCount += words->size();
+    }
 
     ostringstream out;
     out << uid << " " << iid << " " << rating << " " << rtime << " " << words->size() << " " << parsed_review_text;
     line = out.str();
-    outfile << line << endl;
-    nRead++;
-    if (nRead % 100000 == 0)
+#pragma omp critical
     {
-      printf(".");
-      fflush(stdout);
+      outfile << line << endl;
+      nRead++;
+      if (nRead % 100000 == 0)
+      {
+        printf(".");
+        fflush(stdout);
+      }
     }
     delete words;
   }
