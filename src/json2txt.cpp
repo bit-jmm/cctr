@@ -78,8 +78,8 @@ void json2txt(string source_file, string dest_file)
         printf(".");
         fflush(stdout);
       }
+      delete words;
     }
-    delete words;
   }
   cout << endl << "user_num : " << uCount.size() << endl;
   cout << "item_num : " << iCount.size() << endl;
