@@ -60,7 +60,6 @@ void json2txt(string source_file, string dest_file)
     if (nRead % 100000 == 0)
     {
       printf(".");
-      fflush(stdout);
     }
     delete words;
   }
