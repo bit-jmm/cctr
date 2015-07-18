@@ -1,5 +1,0 @@
-Dataset: ...ating_datasets/Arts.votes_train.txt
-With Setup: test-set -f ../../data/rating_datasets/Arts.votes_test.txt
-Dataset: ...rating_datasets/Arts.votes_test.txt
-BPMF,1.189717,1.601079,0.297429,1.177020,1.624763,0.681508,,5, 200,'01:11','00:00'
-
