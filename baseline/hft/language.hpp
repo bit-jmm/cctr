@@ -1,4 +1,5 @@
 #include "common.hpp"
+#include <fstream>
 
 class topicCorpus
 {
@@ -39,18 +40,24 @@ public:
       double trainFraction = 2000000.0 / corp->V->size();
       testFraction = (1.0 - trainFraction)/2;
     }
-
+    std::ofstream trainFile;
+    trainFile.open("../../data/rating_datasets/" + corp->input_filename + "_train.txt", std::ofstream::out);
+    std::ofstream testFile;
+    testFile.open("../../data/rating_datasets/" + corp->input_filename + "_test.txt", std::ofstream::out);
+    std::cout << trainFile << std::endl;
     for (std::vector<vote*>::iterator it = corp->V->begin(); it != corp->V->end(); it ++)
     {
       double r = rand() * 1.0 / RAND_MAX;
       if (r < testFraction)
       {
         testVotes.insert(*it);
+        testFile << (*it)->user << " " << (*it)->item << " " << (*it)->value << " " << (*it)->voteTime << std::endl;
       }
       else if (r < 2*testFraction)
         validVotes.push_back(*it);
       else
       {
+        trainFile << (*it)->user << " " << (*it)->item << " " << (*it)->value << " " << (*it)->voteTime << std::endl;
         trainVotes.push_back(*it);
         trainVotesPerUser[(*it)->user].push_back(*it);
         trainVotesPerBeer[(*it)->item].push_back(*it);
@@ -62,6 +69,8 @@ public:
         nTrainingPerBeer[(*it)->item] ++;
       }
     }
+    trainFile.close();
+    testFile.close();
 
     std::vector<vote*> remove;
     for (std::set<vote*>::iterator it = testVotes.begin(); it != testVotes.end(); it ++)

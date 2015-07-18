@@ -34,6 +34,21 @@ FILE* fopen_(const char* p, const char* m)
   return f;
 }
 
+std::string filename_in_path(std::string &path)
+{
+  int begin = 0;
+  int end = path.length();
+  int pos = path.find_last_of("/\\");
+  if (pos != std::string::npos) {
+    begin = pos;
+  }
+  pos = path.find_last_of(".");
+  if (pos != std::string::npos) {
+    end = pos;
+  }
+  return path.substr(begin+1, end-begin-1);
+}
+
 /// Data associated with a rating
 struct vote
 {
@@ -84,6 +99,8 @@ public:
   std::map<std::string, int> wordId; // Map each word to its integer ID
   std::map<int, std::string> idWord; // Inverse of the above map
 
+  std::string input_filename;
+
   corpus(std::vector<std::string> voteFiles, int max)
   {
     std::map<std::string, int> uCounts;
@@ -105,6 +122,11 @@ public:
     for (std::vector<std::string>::iterator it=voteFiles.begin(); it!=voteFiles.end();++it)
     {
       lines = readLines(*it, max);
+      if(input_filename.length()==0) {
+        input_filename = filename_in_path(*it);
+      } else {
+        input_filename += "_" + filename_in_path(*it);
+      }
       for(std::vector<std::string>::iterator it=lines.begin(); it!=lines.end();++it)
       {
         line = *it;
