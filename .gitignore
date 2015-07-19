@@ -4,6 +4,7 @@ data/
 *.log
 *.txt
 log/
+*.conf
 # Compiled Object files
 *.slo
 *.lo
