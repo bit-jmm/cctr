@@ -44,7 +44,6 @@ public:
     trainFile.open("../../data/rating_datasets/" + corp->input_filename + "_train.txt", std::ofstream::out);
     std::ofstream testFile;
     testFile.open("../../data/rating_datasets/" + corp->input_filename + "_test.txt", std::ofstream::out);
-    std::cout << trainFile << std::endl;
     for (std::vector<vote*>::iterator it = corp->V->begin(); it != corp->V->end(); it ++)
     {
       double r = rand() * 1.0 / RAND_MAX;

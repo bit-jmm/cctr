@@ -137,6 +137,11 @@ public:
           printf("Got bad value of %f\nOther fields were %s %s %d\n", value, uName.c_str(), bName.c_str(), voteTime);
           exit(0);
         }
+
+        // item number up to 5000
+        if (bCounts.size()==5000 && bCounts.find(bName)==bCounts.end()) {
+          continue;
+        }
         for (int w = 0; w < nw; w++)
         {
           ss >> sWord;
@@ -214,6 +219,10 @@ public:
         std::stringstream ss(line);
         ss >> uName >> bName >> value >> voteTime >> nw;
 
+        if(bCounts.find(bName) == bCounts.end()) {
+          continue;
+        }
+
         for (int w = 0; w < nw; w++)
         {
           ss >> sWord;
@@ -253,7 +262,7 @@ public:
       }
     }
 
-    printf("\n");
+    printf("user count: %d, item count: %d, review count: %d\n", nUsers, nBeers, V->size());
     delete v;
   }
 
