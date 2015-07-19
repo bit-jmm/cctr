@@ -135,7 +135,7 @@ public:
         if (value > 5 or value < 0)
         { // Ratings should be in the range [0,5]
           printf("Got bad value of %f\nOther fields were %s %s %d\n", value, uName.c_str(), bName.c_str(), voteTime);
-          exit(0);
+          continue;
         }
 
         // item number up to 5000
