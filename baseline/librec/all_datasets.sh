@@ -28,33 +28,35 @@ do
     fi
   done
   echo "$trainfile : $testfile"
-  echo "dataset.ratings.lins=../../data/rating_datasets/$trainfile" > "$algorithm".conf
-  echo "ratings.setup=-columns 0 1 2 -threshold -1" >> "$algorithm".conf
-  echo "" >> "$algorithm".conf
-  echo "recommender=$algorithm" >> "$algorithm".conf
-  echo "evaluation.setup=test-set -f ../../data/rating_datasets/$testfile" >> "$algorithm".conf
-  echo "item.ranking=off -topN -1 -ignore -1" >> "$algorithm".conf
-  echo "" >> "$algorithm".conf
-  echo "num.factors=5" >> "$algorithm".conf
+  configfile=config/"$trainfile".conf
+
+  echo "dataset.ratings.lins=../../data/rating_datasets/$trainfile" > $configfile
+  echo "ratings.setup=-columns 0 1 2 -threshold -1" >> $configfile
+  echo "" >> $configfile
+  echo "recommender=$algorithm" >> $configfile
+  echo "evaluation.setup=test-set -f ../../data/rating_datasets/$testfile" >> $configfile
+  echo "item.ranking=off -topN -1 -ignore -1" >> $configfile
+  echo "" >> $configfile
+  echo "num.factors=5" >> $configfile
 
   if [ $pgm = 1 ]; then
-    echo "num.max.iter=1000" >> "$algorithm".conf
+    echo "num.max.iter=1000" >> $configfile
   else
-    echo "num.max.iter=30" >> "$algorithm".conf
+    echo "num.max.iter=30" >> $configfile
   fi
 
-  echo "" >> "$algorithm".conf
+  echo "" >> $configfile
 
   if [ $pgm = 1 ]; then
-    echo "pgm.setup=-alpha 2 -beta 0.5 -burn-in 500 -sample-lag 100 -interval 100" >> "$algorithm".conf
+    echo "pgm.setup=-alpha 2 -beta 0.5 -burn-in 500 -sample-lag 100 -interval 100" >> $configfile
   else
-    echo "learn.rate=0.01 -max -1 -bold-driver" >> "$algorithm".conf
-    echo "reg.lambda=0.1 -u 0.1 -i 0.1 -b 0.1 -s 0.001" >> "$algorithm".conf
+    echo "learn.rate=0.01 -max -1 -bold-driver" >> $configfile
+    echo "reg.lambda=0.1 -u 0.1 -i 0.1 -b 0.1 -s 0.001" >> $configfile
   fi
 
-  echo "output.setup=off -dir ./demo/Results/ -verbose on" >> "$algorithm".conf
+  echo "output.setup=off -dir ./demo/Results/ -verbose on" >> $configfile
 
-  java -jar librec.jar -c "$algorithm".conf
+  nohup java -jar librec.jar -c $configfile > log/"$trainfile".log 2>&1 &
 
   num=$[$num + 1]
 done
