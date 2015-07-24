@@ -14,20 +14,20 @@ void URRP::init_model()
     int user = (*it)->user;
     int item = (*it)->item;
     int rating = (*it)->value;
-    vector<int>* words = &((*it)->words);
+    vector< pair<int,int> >* words = &((*it)->words);
 
     //init attitude and topic
     int attitude = rand() % K;
-    (*x)(user, item) = attitude;
+    (*it)->attitude = attitude;
     (*muk)(user, attitude)++;
     (*ckvs)(attitude, item)(rating)++;
 
     int topic = rand() % K;
-    for(vector<int>::iterator it2=words->begin(); it2 != words->end(); it2++)
+    for(vector< pair<int,int> >::iterator it2=words->begin(); it2 != words->end(); it2++)
     {
-      (*z)(user, item)(*it2) = topic;
+      (*it2).second = topic;
       (*nuk)(user, topic)++;
-      (*nkw)(topic, *it2)++;
+      (*nkw)(topic, (*it2).first)++;
       topic = rand() % K;
     }
   }

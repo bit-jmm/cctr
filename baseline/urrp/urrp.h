@@ -31,11 +31,6 @@ private:
   int burn_in;
   int sample_lag;
 
-  //attitude assignments for each rating r_u,v
-  MatrixXd * x;
-  //topic assignments for each word in d_u,v,w
-  Matrix<VectorXd, Dynamic, Dynamic> * z;
-
   // times that topic k has been assigned to word w
   MatrixXd * nkw;
 
@@ -70,12 +65,6 @@ public:
     this->alpha = new double[K];
     this->beta = new double[nWords];
     this->lambda = new double[S];
-
-    this->x = new MatrixXd(nUsers, nItems);
-    this->z = new Matrix<VectorXd, Dynamic, Dynamic>(nUsers, nItems);
-    for(int u=0; u<nUsers; u++)
-      for(int v=0; v<nItems; v++)
-        (*z)(u, v) = VectorXd(nWords);
 
     this->nkw = new MatrixXd(K, nWords);
     this->nuk = new MatrixXd(nUsers,K);
@@ -152,8 +141,6 @@ public:
     delete[] alpha;
     delete[] beta;
     delete[] lambda;
-    delete[] x;
-    delete[] z;
     delete[] nkw;
     delete[] nuk;
     delete[] muk;

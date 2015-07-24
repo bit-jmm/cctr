@@ -21,8 +21,10 @@ struct rating
   int item; // ID of the item
   int value; // Rating
 
+  int attitude=0;
+
   int ratingTime; // Unix-time of the rating
-  std::vector<int> words; // IDs of the words in the review
+  std::vector< std::pair<int, int> > words; // IDs of the words in the review
 };
 
 typedef struct rating rating;
@@ -181,7 +183,7 @@ public:
           if (word2id.find(sWord) != word2id.end())
           {
             all_words_count++;
-            v->words.push_back(word2id[sWord]);
+            v->words.push_back(std::make_pair(word2id[sWord], 0));
           }
         }
 
