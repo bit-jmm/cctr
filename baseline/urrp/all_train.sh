@@ -1,5 +1,5 @@
 #!/bin/bash
-num=5
+num=1
 step=5
 begin=$[($num - 1) * $step + 1]
 end=$[$num * $step]
@@ -14,6 +14,6 @@ do
             break
         fi
         filename=`basename $file`
-        nohup ./train -i $file > ./log/"$filename".log 2>&1 &
+        nohup ./urrp -i $file > ./log/"$filename".log 2>&1 &
     fi
 done
