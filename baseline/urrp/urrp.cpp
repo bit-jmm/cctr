@@ -292,15 +292,11 @@ void URRP::train()
     // get statistics after burn-in
     if ((iter > burn_in) && (iter % sample_lag == 0))
     {
-      if (is_converged(iter) && false)
+      if (is_converged(iter))
       {
         break;
       }
     }
-    //if (iter % 5 == 0)
-    //{
-      //printf("iter: %d\n", iter);
-    //}
   }
 }
 

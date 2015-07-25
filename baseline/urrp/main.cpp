@@ -11,13 +11,13 @@ void parse_parameters(const int argc, char* const* argv, vector<string> &inputfi
 
 int main(int argc, char** argv)
 {
-  double alpha = 0.1;
-  double beta = 0.1;
-  double lambda = 0.1;
+  double alpha = 2;
+  double beta = 0.5;
+  double lambda = 0.5;
   int K = 5;
-  int max_iter = 20;
-  int burn_in = -1;
-  int sample_lag = 1;
+  int max_iter = 1000;
+  int burn_in = 500;
+  int sample_lag = 50;
 
   vector<string> inputfiles;
 
