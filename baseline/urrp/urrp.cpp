@@ -1,6 +1,5 @@
 #include "urrp.h"
 #include <boost/math/special_functions/digamma.hpp>
-
 using namespace std;
 
 inline double square(double x)
@@ -60,23 +59,17 @@ void URRP::sample_topic_attitude_assignments()
 
     int nu = get_nu(user);
     int mu = get_mu(user);
-    double pre_p = 0;
-    for(int k=0; k<K; k++)
+    int k=0;
+    #pragma omp parallel for
+    for(k=0; k<K; k++)
     {
-      int ckv = get_ckv(k, item);
-      if(k>0)
-      {
-        pre_p = p[k-1];
-      }
-      else
-      {
-        pre_p = 0.0;
-      }
-      p[k] = pre_p + ((*nuk)[user][k] + (*muk)[user][k] + alpha[k]) / (nu + mu + sum_alpha) * (((*ckvs)[k][item][rating] + lambda[rating]) / (ckv + sum_lambda));
+      p[k] = ((*nuk)[user][k] + (*muk)[user][k] + alpha[k]) / (nu + mu + sum_alpha) * (((*ckvs)[k][item][rating] + lambda[rating]) / (get_ckv(k, item) + sum_lambda));
     }
 
+    for(k=1; k<K; k++)
+      p[k] += p[k-1];
+
     double randdouble = (rand() * 1.0 / RAND_MAX) * p[K-1];
-    int k;
     for(k=0; k<K; k++)
     {
       if(randdouble <= p[k])
@@ -98,21 +91,14 @@ void URRP::sample_topic_attitude_assignments()
       int current_topic = (*it2).second;
       (*nuk)[user][current_topic]--;
       (*nkw)[current_topic][w]--;
-
-      double pre_p = 0;
-      for(int k=0; k<K; k++)
+      int k=0;
+      #pragma omp parallel for
+      for(k=0; k<K; k++)
       {
-        if(k>0)
-        {
-          pre_p = p[k-1];
-        }
-        else
-        {
-          pre_p = 0.0;
-        }
-        int nk = get_nk(k);
-        p[k] = pre_p + (((*nuk)[user][k] + (*muk)[user][k] + alpha[k]) / (nu + mu + sum_alpha) * (((*nkw)[k][w] + beta[w]) / (nk + sum_beta)));
+        p[k] = (((*nuk)[user][k] + (*muk)[user][k] + alpha[k]) / (nu + mu + sum_alpha) * (((*nkw)[k][w] + beta[w]) / (get_nk(k) + sum_beta)));
       }
+      for(k=1; k<K; k++)
+        p[k] += p[k-1];
 
       randdouble = (rand() * 1.0 / RAND_MAX) * p[K-1];
       for(k=0; k<K; k++)
@@ -133,8 +119,9 @@ void URRP::sample_topic_attitude_assignments()
 
 int URRP::get_nk(int k)
 {
-  int val = 0;
-  for(int w=0; w<nWords; w++)
+  int val = 0, w;
+  #pragma omp parallel for reduction (+:val)
+  for(w=0; w<nWords; w++)
   {
     val += (*nkw)[k][w];
   }
@@ -143,8 +130,9 @@ int URRP::get_nk(int k)
 
 int URRP::get_nu(int u)
 {
-  int val = 0;
-  for(int k=0; k<K; k++)
+  int val = 0, k;
+  #pragma omp parallel for reduction (+:val)
+  for(k=0; k<K; k++)
   {
     val += (*nuk)[u][k];
   }
@@ -153,8 +141,9 @@ int URRP::get_nu(int u)
 
 int URRP::get_mu(int u)
 {
-  int val = 0;
-  for(int k=0; k<K; k++)
+  int val = 0, k;
+  #pragma omp parallel for reduction (+:val)
+  for(k=0; k<K; k++)
   {
     val += (*muk)[u][k];
   }
@@ -163,8 +152,9 @@ int URRP::get_mu(int u)
 
 int URRP::get_ckv(int k, int v)
 {
-  int val = 0;
-  for(int s=0; s<S; s++)
+  int val = 0, s;
+  #pragma omp parallel for reduction (+:val)
+  for(s=0; s<S; s++)
   {
     val += (*ckvs)[k][v][s];
   }
@@ -173,48 +163,33 @@ int URRP::get_ckv(int k, int v)
 
 void URRP::readout_params()
 {
-  int nu = 0;
-  int mu = 0;
-  int nk = 0;
-  int ckv = 0;
+  int u,v,k,w,s;
+#pragma omp parallel for collapse(2)
+  for(u=0; u<nUsers; u++)
+    for(k=0; k<K; k++)
+      (*theta)[u][k] = ((*nuk)[u][k] + (*muk)[u][k] + alpha[k]) / (get_nu(u) + get_mu(u) + sum_alpha);
 
-  for(int u=0; u<nUsers; u++)
-  {
-    nu = get_nu(u);
-    mu = get_mu(u);
-    for(int k=0; k<K; k++)
-    {
-       (*theta)[u][k] = ((*nuk)[u][k] + (*muk)[u][k] + alpha[k]) / (nu + mu + sum_alpha);
-    }
-  }
+#pragma omp parallel for collapse(2)
+  for(k=0; k<K; k++)
+    for(w=0; w<nWords; w++)
+      (*phi)[k][w] = ((*nkw)[k][w] + beta[w]) / (get_nk(k) + sum_beta);
 
-  for(int k=0; k<K; k++)
-  {
-    nk = get_nk(k);
-    for(int w=0; w<nWords; w++)
-    {
-       (*phi)[k][w] = ((*nkw)[k][w] + beta[w]) / (nk + sum_beta);
-    }
-  }
-
-  for(int k=0; k<K; k++)
-    for(int v=0; v<nItems; v++)
-    {
-      ckv = get_ckv(k,v);
-      for(int s=0; s<S; s++)
-      {
-        (*xi)[k][v][s] = ((*ckvs)[k][v][s] + lambda[s]) / (ckv + sum_lambda);
-      }
-    }
+#pragma omp parallel for collapse(3)
+  for(k=0; k<K; k++)
+    for(v=0; v<nItems; v++)
+      for(s=0; s<S; s++)
+        (*xi)[k][v][s] = ((*ckvs)[k][v][s] + lambda[s]) / (get_ckv(k,v) + sum_lambda);
 }
 void URRP::update_hyperparameters()
 {
-  double ak, betaw, lambdas;
+  int u,v,k,w,s;
+  double ak, betaw,lambdas, numerator, denominator;
   //update alpha
-  for (int k = 0; k < K; k++) {
+  for (k = 0; k < K; k++) {
     ak = alpha[k];
-    double numerator = 0, denominator = 0;
-    for (int u = 0; u < nUsers; u++) {
+    numerator = 0, denominator = 0;
+    #pragma omp parallel for reduction (+:numerator,denominator)
+    for (u = 0; u < nUsers; u++) {
       numerator += digamma((*nuk)[u][k] + (*muk)[u][k] + ak) - digamma(ak);
       denominator += digamma(get_nu(u) + get_mu(u) + sum_alpha) - digamma(sum_alpha);
     }
@@ -222,32 +197,36 @@ void URRP::update_hyperparameters()
       alpha[k] = ak * (numerator / denominator);
   }
   sum_alpha = 0;
-  for (int k = 0; k < K; k++)
+  for (k = 0; k < K; k++)
   {
     sum_alpha += alpha[k];
   }
   //update beta
-  for (int w = 0; w < nWords; w++) {
+  for (w = 0; w < nWords; w++) {
     betaw = beta[w];
-    double numerator = 0, denominator = 0;
-    for (int k = 0; k < K; k++) {
+    numerator = 0, denominator = 0;
+    #pragma omp parallel for reduction (+:numerator,denominator)
+    for (k = 0; k < K; k++) {
       numerator += digamma((*nkw)[k][w] + betaw) - digamma(betaw);
       denominator += digamma(get_nk(k) + sum_beta) - digamma(sum_beta);
     }
     if (numerator != 0)
       beta[w] = betaw * (numerator / denominator);
   }
-  sum_beta = 0;
-  for (int w = 0; w < nWords; w++)
+  double tmp_sum_beta = 0;
+  #pragma omp parallel for reduction (+:tmp_sum_beta)
+  for (w = 0; w < nWords; w++)
   {
-    sum_beta += beta[w];
+    tmp_sum_beta += beta[w];
   }
+  sum_beta = tmp_sum_beta;
   //update lambda
-  for (int s = 0; s < S; s++) {
+  for (s = 0; s < S; s++) {
     lambdas = lambda[s];
-    double numerator = 0, denominator = 0;
-    for(int k=0; k<K; k++)
-      for(int v=0; v<nItems; v++)
+    numerator = 0, denominator = 0;
+    #pragma omp parallel for collapse(2) reduction (+:numerator,denominator)
+    for(k=0; k<K; k++)
+      for(v=0; v<nItems; v++)
       {
         numerator += digamma((*ckvs)[k][v][s] + lambdas) - digamma(lambdas);
         denominator += digamma(get_ckv(k, v) + sum_lambda) - digamma(sum_lambda);
@@ -256,7 +235,7 @@ void URRP::update_hyperparameters()
       lambda[s] = lambdas * (numerator / denominator);
   }
   sum_lambda = 0;
-  for (int s = 0; s < S; s++)
+  for (s = 0; s < S; s++)
   {
     sum_lambda += lambda[s];
   }
@@ -268,14 +247,18 @@ bool URRP::is_converged(int iter)
   double validate_err = 0.0;
   double test_err = 0.0;
   double test_ste = 0.0;
-  for(vector<rating*>::iterator it=validratings.begin(); it!=validratings.end(); it++)
+  size_t i;
+
+  #pragma omp parallel for reduction (+:validate_err)
+  for(i=0; i<validratings.size(); i++)
   {
-    validate_err += square(predict(*it) - (*it)->value-1);
+    validate_err += square(predict(validratings[i]) - validratings[i]->value - 1);
   }
 
-  for(vector<rating*>::iterator it=testratings.begin(); it!=testratings.end(); it++)
+  #pragma omp parallel for reduction (+:test_err,test_ste)
+  for(i=0; i<testratings.size(); i++)
   {
-    double err = square(predict(*it) - (*it)->value-1);
+    double err = square(predict(testratings[i]) - testratings[i]->value - 1);
     test_err += err;
     test_ste += err*err;
   }

@@ -136,7 +136,6 @@ public:
 
   ~URRP()
   {
-    delete corp;
     delete[] alpha;
     delete[] beta;
     delete[] lambda;
