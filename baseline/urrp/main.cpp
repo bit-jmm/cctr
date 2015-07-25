@@ -15,9 +15,9 @@ int main(int argc, char** argv)
   double beta = 0.1;
   double lambda = 0.1;
   int K = 5;
-  int max_iter = 1000;
-  int burn_in = 500;
-  int sample_lag = 50;
+  int max_iter = 20;
+  int burn_in = -1;
+  int sample_lag = 1;
 
   vector<string> inputfiles;
 

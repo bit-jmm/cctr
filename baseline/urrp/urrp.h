@@ -1,9 +1,14 @@
 #pragma once
 
 #include "utils.h"
-#include <Eigen/Dense>
 #include <fstream>
-using namespace Eigen;
+#include "boost/multi_array.hpp"
+using namespace boost;
+typedef multi_array<int, 3> ThreeIntArray;
+typedef multi_array<int, 2> TwoIntArray;
+typedef multi_array<double, 3> ThreeDoubleArray;
+typedef multi_array<double, 2> TwoDoubleArray;
+
 class URRP
 {
 private:
@@ -32,24 +37,24 @@ private:
   int sample_lag;
 
   // times that topic k has been assigned to word w
-  MatrixXd * nkw;
+  TwoIntArray* nkw;
 
   // times that topic k has been assigned to words in reviews written by user u
-  MatrixXd * nuk;
+  TwoIntArray* nuk;
   // times that attitude k assigned to ratings by user u
-  MatrixXd * muk;
+  TwoIntArray* muk;
   // times that rating s assigned to item v when attitude is k
-  Matrix<VectorXd, Dynamic, Dynamic> * ckvs;
+  ThreeIntArray* ckvs;
 
-  MatrixXf * theta;
-  MatrixXf * phi;
-  Matrix<VectorXf, Dynamic, Dynamic> * xi;
+  TwoDoubleArray* theta;
+  TwoDoubleArray* phi;
+  ThreeDoubleArray* xi;
 
   double sum_alpha;
   double sum_beta;
   double sum_lambda;
 
-  double mse;
+  double prev_mse = 5.0;
 
 public:
 
@@ -66,20 +71,14 @@ public:
     this->beta = new double[nWords];
     this->lambda = new double[S];
 
-    this->nkw = new MatrixXd(K, nWords);
-    this->nuk = new MatrixXd(nUsers,K);
-    this->muk = new MatrixXd(nUsers, K);
-    this->ckvs = new Matrix<VectorXd, Dynamic, Dynamic>(K, nItems);
-    for(int k=0; k<K; k++)
-      for(int v=0; v<nItems; v++)
-        (*ckvs)(k, v) = VectorXd(S);
+    this->nkw = new TwoIntArray(extents[K][nWords]);
+    this->nuk = new TwoIntArray(extents[nUsers][K]);
+    this->muk = new TwoIntArray(extents[nUsers][K]);
+    this->ckvs = new ThreeIntArray(extents[K][nItems][S]);
 
-    this->theta = new MatrixXf(nUsers, K);
-    this->phi = new MatrixXf(K, nWords);
-    this->xi = new Matrix<VectorXf, Dynamic, Dynamic>(K, nItems);
-    for(int k=0; k<K; k++)
-      for(int v=0; v<nItems; v++)
-        (*xi)(k, v) = VectorXf(S);
+    this->theta = new TwoDoubleArray(extents[nUsers][K]);
+    this->phi = new TwoDoubleArray(extents[K][nWords]);
+    this->xi = new ThreeDoubleArray(extents[K][nItems][S]);
 
     printf("\nnum_factors=%d, rating_values=%d, num_words=%d, alpha=%.2f, beta=%.2f, lambda=%.2f, max_iter=%d, burn_in=%d, sample_lag=%d\n",
         K, S, nWords, alpha, beta, lambda, max_iter, burn_in, sample_lag);
@@ -125,29 +124,29 @@ public:
 
   void init_model();
   void sample_topic_attitude_assignments();
-  bool is_converged();
-  double get_nk(int k);
-  double get_nu(int u);
-  double get_mu(int u);
-  double get_ckv(int k, int v);
+  bool is_converged(int iter);
+  int get_nk(int k);
+  int get_nu(int u);
+  int get_mu(int u);
+  int get_ckv(int k, int v);
   void readout_params();
   void update_hyperparameters();
-  void validate_test();
   double predict(rating* vi);
   void train();
 
   ~URRP()
   {
+    delete corp;
     delete[] alpha;
     delete[] beta;
     delete[] lambda;
-    delete[] nkw;
-    delete[] nuk;
-    delete[] muk;
-    delete[] ckvs;
-    delete[] theta;
-    delete[] phi;
-    delete[] xi;
+    delete nkw;
+    delete nuk;
+    delete muk;
+    delete ckvs;
+    delete theta;
+    delete phi;
+    delete xi;
   }
 
 };
