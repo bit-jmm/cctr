@@ -132,6 +132,7 @@ public:
   void readout_params();
   void update_hyperparameters();
   double predict(rating* vi);
+  void topic_words();
   void train();
 
   ~URRP()

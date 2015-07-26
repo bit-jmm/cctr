@@ -7,6 +7,7 @@
 #include <string>
 #include <cctype>
 #include <iostream>
+#include <fstream>
 #include "omp.h"
 #include "map"
 #include "set"
@@ -74,6 +75,17 @@ public:
     std::string sWord;
 
     // Read the input files. The first time the file is read it is only to compute word counts, in order to select the top "maxWords" words to include in the dictionary
+    //stop words
+    std::map<std::string, int> stop_words;
+    std::ifstream stop_file;
+    stop_file.open("../../data/text_preprocess/en.json", std::ios::in);
+    nlohmann::json j;
+    j << stop_file;
+    for(std::string word : j)
+    {
+      stop_words[word] = 1;
+    }
+    stop_file.close();
 
     std::vector<std::string> lines;
     std::string line;
@@ -103,6 +115,8 @@ public:
         for (int w = 0; w < nw; w++)
         {
           ss >> sWord;
+          if(stop_words.find(sWord) != stop_words.end())
+            continue;
           if (wordCount.find(sWord) == wordCount.end())
             wordCount[sWord] = 0;
           wordCount[sWord]++;

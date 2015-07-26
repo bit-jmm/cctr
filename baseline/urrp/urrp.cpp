@@ -269,6 +269,7 @@ bool URRP::is_converged(int iter)
 
   double delta = validate_err - prev_mse;
   printf("\nIter: %d, Validation MSE: %.4lf, Test MSE: %.4lf (%.2lf), validate_mse_delta: %.4lf\n", iter, validate_err, test_err, test_ste, delta);
+  topic_words();
   fflush(stdout);
   //if (delta > 0)
   //{
@@ -298,6 +299,31 @@ void URRP::train()
       //}
     //}
   }
+}
+
+bool word_prob_com(pair<int, double> p1, pair<int, double> p2)
+{
+  return p1.second > p2.second;
+}
+
+void URRP::topic_words()
+{
+  map<int, string> * id2word = &(corp->id2word);
+  for(int k=0; k<K; k++)
+  {
+    vector< pair<int, double> > topic_words;
+    for(int w=0; w<nWords; w++)
+    {
+      topic_words.push_back(make_pair(w, (*phi)[k][w]));
+    }
+    sort(topic_words.begin(), topic_words.end(), word_prob_com);
+    printf("\nTopic %d:", k+1);
+    for(int i=0; i<10; i++)
+    {
+      printf(" %s(%.4lf)", (*id2word)[topic_words[i].first].c_str(), (*phi)[k][topic_words[i].first]);
+    }
+  }
+  printf("\n");
 }
 
 // Predict a particular rating given the current parameter values
