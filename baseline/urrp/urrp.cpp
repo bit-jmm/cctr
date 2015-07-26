@@ -270,10 +270,10 @@ bool URRP::is_converged(int iter)
   double delta = validate_err - prev_mse;
   printf("\nIter: %d, Validation MSE: %.4lf, Test MSE: %.4lf (%.2lf), validate_mse_delta: %.4lf\n", iter, validate_err, test_err, test_ste, delta);
 
-  if (delta > 0)
-  {
-    return true;
-  }
+  //if (delta > 0)
+  //{
+    //return true;
+  //}
   prev_mse = validate_err;
   return false;
 }
@@ -288,15 +288,15 @@ void URRP::train()
     sample_topic_attitude_assignments();
     // update hyper-parameters
     update_hyperparameters();
-
+    is_converged(iter);
     // get statistics after burn-in
-    if ((iter > burn_in) && (iter % sample_lag == 0))
-    {
-      if (is_converged(iter))
-      {
-        break;
-      }
-    }
+    //if ((iter > burn_in) && (iter % sample_lag == 0))
+    //{
+      //if (is_converged(iter))
+      //{
+        //break;
+      //}
+    //}
   }
 }
 
