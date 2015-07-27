@@ -42,7 +42,7 @@ void URRP::init_model()
     }
   }
 }
-void URRP::sample_topic_attitude_assignments()
+void URRP::sample_topic_attitude_assignments(int iter)
 {
   double* p = new double[K];
   for(vector<rating*>::iterator it=trainratings.begin(); it != trainratings.end(); it++)
@@ -77,41 +77,44 @@ void URRP::sample_topic_attitude_assignments()
         break;
       }
     }
-    if(k==K) k = K-1;
+    //if(k==K) k = K-1;
     (*it)->attitude = k;
     (*muk)[user][k]++;
     (*ckvs)[k][item][rating]++;
 
-    nu = get_nu(user);
-    mu = get_mu(user);
-
-    for(vector< pair<int,int> >::iterator it2=words->begin(); it2 != words->end(); it2++)
+    if (iter % sample_lag == 0)
     {
-      int w = (*it2).first;
-      int current_topic = (*it2).second;
-      (*nuk)[user][current_topic]--;
-      (*nkw)[current_topic][w]--;
-      int k=0;
-      #pragma omp parallel for
-      for(k=0; k<K; k++)
-      {
-        p[k] = (((*nuk)[user][k] + (*muk)[user][k] + alpha[k]) / (nu + mu + sum_alpha) * (((*nkw)[k][w] + beta[w]) / (get_nk(k) + sum_beta)));
-      }
-      for(k=1; k<K; k++)
-        p[k] += p[k-1];
+      nu = get_nu(user);
+      mu = get_mu(user);
 
-      randdouble = (rand() * 1.0 / RAND_MAX) * p[K-1];
-      for(k=0; k<K; k++)
+      for(vector< pair<int,int> >::iterator it2=words->begin(); it2 != words->end(); it2++)
       {
-        if(randdouble <= p[k])
+        int w = (*it2).first;
+        int current_topic = (*it2).second;
+        (*nuk)[user][current_topic]--;
+        (*nkw)[current_topic][w]--;
+        int k=0;
+      #pragma omp parallel for
+        for(k=0; k<K; k++)
         {
-          break;
+          p[k] = (((*nuk)[user][k] + (*muk)[user][k] + alpha[k]) / (nu + mu + sum_alpha) * (((*nkw)[k][w] + beta[w]) / (get_nk(k) + sum_beta)));
         }
+        for(k=1; k<K; k++)
+          p[k] += p[k-1];
+
+        randdouble = (rand() * 1.0 / RAND_MAX) * p[K-1];
+        for(k=0; k<K; k++)
+        {
+          if(randdouble <= p[k])
+          {
+            break;
+          }
+        }
+        //if(k==K) k = K-1;
+        (*it2).second = k;
+        (*nuk)[user][k]++;
+        (*nkw)[k][w]++;
       }
-      if(k==K) k = K-1;
-      (*it2).second = k;
-      (*nuk)[user][k]++;
-      (*nkw)[k][w]++;
     }
   }
   delete[] p;
@@ -276,7 +279,8 @@ bool URRP::is_converged(int iter)
   double delta = validate_err - prev_mse;
   printf("\nIter: %d, Validation MSE: %.4lf, Test MSE: %.4lf (%.2lf), validate_mse_delta: %.4lf\n", iter, validate_err, test_err, test_ste, delta);
   printf("\nCurrent best MSE:\t%.4lf (%.2lf)\n", current_best, current_best_ste);
-  topic_words();
+  if (iter % sample_lag == 0)
+    topic_words();
   //if (delta > 0)
   //{
     //return true;
@@ -291,10 +295,10 @@ bool URRP::is_converged(int iter)
 void URRP::train()
 {
   init_model();
-  is_converged(-1);
-  for (int iter = 0; iter < max_iter; iter++) {
+  is_converged(0);
+  for (int iter = 1; iter < max_iter; iter++) {
     // sample topic and attitude for all words and ratings
-    sample_topic_attitude_assignments();
+    sample_topic_attitude_assignments(iter);
     // update hyper-parameters
     update_hyperparameters();
     is_converged(iter);

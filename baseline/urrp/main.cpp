@@ -7,21 +7,21 @@
 using namespace std;
 
 void parse_parameters(const int argc, char* const* argv, vector<string> &inputfiles,
-    double &alpha, double &beta, double &lambda, int &K);
+    double &alpha, double &beta, double &lambda, int &K, int & max_iter, int & burn_in, int & sample_lag);
 
 int main(int argc, char** argv)
 {
-  double alpha = 0.1;
-  double beta = 0.1;
-  double lambda = 0.1;
+  double alpha = 2;
+  double beta = 0.5;
+  double lambda = 0.5;
   int K = 5;
-  int max_iter = 100;
-  int burn_in = 50;
-  int sample_lag = 10;
+  int max_iter = 500;
+  int burn_in = 300;
+  int sample_lag = 50;
 
   vector<string> inputfiles;
 
-  parse_parameters(argc, (char * const *)argv, inputfiles, alpha, beta, lambda, K);
+  parse_parameters(argc, (char * const *)argv, inputfiles, alpha, beta, lambda, K, max_iter, burn_in, sample_lag);
 
   if(inputfiles.empty())
   {
@@ -46,7 +46,7 @@ int main(int argc, char** argv)
 }
 
 void parse_parameters(const int argc, char* const* argv, vector<string> &inputfiles,
-    double &alpha, double &beta, double &lambda, int &K)
+    double &alpha, double &beta, double &lambda, int &K, int & max_iter, int & burn_in, int & sample_lag)
 {
 
   static struct option long_options[] =
@@ -56,6 +56,9 @@ void parse_parameters(const int argc, char* const* argv, vector<string> &inputfi
     {"alpha", required_argument, 0, 'a'},
     {"beta", required_argument, 0, 'b'},
     {"lambda", required_argument, 0, 'l'},
+    {"max_iter", required_argument, 0, 'm'},
+    {"burn_in", required_argument, 0, 'n'},
+    {"sample_lag", required_argument, 0, 's'},
   };
 
   /* getopt_long stores the option index here. */
@@ -64,7 +67,7 @@ void parse_parameters(const int argc, char* const* argv, vector<string> &inputfi
 
   while(c != -1)
   {
-    c = getopt_long(argc, argv, "i:k:a:b:l:", long_options, &option_index);
+    c = getopt_long(argc, argv, "i:k:a:b:l:m:n:s:", long_options, &option_index);
 
     switch(c)
     {
@@ -92,6 +95,18 @@ void parse_parameters(const int argc, char* const* argv, vector<string> &inputfi
 
       case 'l':
         lambda = atof(optarg);
+        break;
+
+      case 'm':
+        max_iter = atoi(optarg);
+        break;
+
+      case 'n':
+        burn_in = atoi(optarg);
+        break;
+
+      case 's':
+        sample_lag = atoi(optarg);
         break;
 
       case '?':

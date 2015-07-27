@@ -125,7 +125,7 @@ public:
   }
 
   void init_model();
-  void sample_topic_attitude_assignments();
+  void sample_topic_attitude_assignments(int iter);
   bool is_converged(int iter);
   int get_nk(int k);
   int get_nu(int u);
