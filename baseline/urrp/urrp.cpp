@@ -275,7 +275,7 @@ bool URRP::is_converged(int iter)
 
   double delta = validate_err - prev_mse;
   printf("\nIter: %d, Validation MSE: %.4lf, Test MSE: %.4lf (%.2lf), validate_mse_delta: %.4lf\n", iter, validate_err, test_err, test_ste, delta);
-  printf("\nCurrent best MSE:\t%.4lf\n", current_best);
+  printf("\nCurrent best MSE:\t%.4lf (%.2lf)\n", current_best, current_best_ste);
   topic_words();
   //if (delta > 0)
   //{
