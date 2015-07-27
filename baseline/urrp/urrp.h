@@ -98,29 +98,29 @@ public:
       double trainFraction = 2000000.0 / corp->V->size();
       testFraction = (1.0 - trainFraction)/2;
     }
-    std::ofstream trainFile;
-    trainFile.open("../../data/rating_datasets/" + corp->input_filename + "_train.txt", std::ofstream::out);
-    std::ofstream testFile;
-    testFile.open("../../data/rating_datasets/" + corp->input_filename + "_test.txt", std::ofstream::out);
+    //std::ofstream trainFile;
+    //trainFile.open("../../data/rating_datasets/" + corp->input_filename + "_train.txt", std::ofstream::out);
+    //std::ofstream testFile;
+    //testFile.open("../../data/rating_datasets/" + corp->input_filename + "_test.txt", std::ofstream::out);
     for (std::vector<rating*>::iterator it = corp->V->begin(); it != corp->V->end(); it ++)
     {
       double r = rand() * 1.0 / RAND_MAX;
       if (r < testFraction)
       {
         testratings.push_back(*it);
-        testFile << (*it)->user << " " << (*it)->item << " " << (*it)->value << " " << (*it)->ratingTime << std::endl;
+        //testFile << (*it)->user << " " << (*it)->item << " " << (*it)->value << " " << (*it)->ratingTime << std::endl;
       }
       else if (r < 2*testFraction)
         validratings.push_back(*it);
       else
       {
-        trainFile << (*it)->user << " " << (*it)->item << " " << (*it)->value << " " << (*it)->ratingTime << std::endl;
+        //trainFile << (*it)->user << " " << (*it)->item << " " << (*it)->value << " " << (*it)->ratingTime << std::endl;
         trainratings.push_back(*it);
       }
     }
     printf("\ntrain ratings: %zu, validate ratings: %zu, test ratings: %zu\n", trainratings.size(), validratings.size(), testratings.size());
-    trainFile.close();
-    testFile.close();
+    //trainFile.close();
+    //testFile.close();
   }
 
   void init_model();
