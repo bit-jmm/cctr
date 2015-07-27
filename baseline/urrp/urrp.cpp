@@ -335,7 +335,11 @@ void URRP::train()
   for(int i=0; i<burn_in; i++)
   {
     sample_topics();
-    printf("LDA stage: iter %d\n", i);
+    if (i % 10 == 0)
+    {
+      printf("LDA stage: iter %d\n", i);
+      fflush(stdout);
+    }
   }
   readout_theta_phi();
   topic_words();
@@ -377,6 +381,7 @@ void URRP::topic_words()
     }
   }
   printf("\n");
+  fflush(stdout);
 }
 
 // Predict a particular rating given the current parameter values
