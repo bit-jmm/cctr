@@ -11,10 +11,10 @@ void parse_parameters(const int argc, char* const* argv, vector<string> &inputfi
 
 int main(int argc, char** argv)
 {
-  double alpha = 2;
-  double beta = 0.5;
-  double lambda = 0.5;
   int K = 5;
+  double alpha = 50.0/K;
+  double beta = 200.0/3000;
+  double lambda = 200.0/3000;
   int max_iter = 500;
   int burn_in = 300;
   int sample_lag = 50;

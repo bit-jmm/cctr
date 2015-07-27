@@ -125,15 +125,20 @@ public:
   }
 
   void init_model();
-  void sample_topic_attitude_assignments(int iter);
-  bool is_converged(int iter);
+  void sample_topics();
+  void sample_attitudes();
+  void evaluate(int iter);
   int get_nk(int k);
   int get_nu(int u);
   int get_mu(int u);
   int get_ckv(int k, int v);
-  void readout_params();
-  void update_hyperparameters();
-  double predict(rating* vi);
+  void readout_theta_phi();
+  void readout_theta_xi();
+  void update_alpha();
+  void update_beta();
+  void update_lambda();
+  double predict_with_expect(rating* vi);
+  double predict_with_most_prob(rating* vi);
   void topic_words();
   void train();
 
