@@ -56,6 +56,7 @@ private:
 
   double prev_mse = 5.0;
   double current_best = 5.0;
+  double current_best_ste = 0.0;
 
 public:
 

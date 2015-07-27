@@ -268,7 +268,10 @@ bool URRP::is_converged(int iter)
   test_ste = sqrt((test_ste-test_err*test_err)/testratings.size());
 
   if(test_err < current_best)
+  {
     current_best = test_err;
+    current_best_ste = test_ste;
+  }
 
   double delta = validate_err - prev_mse;
   printf("\nIter: %d, Validation MSE: %.4lf, Test MSE: %.4lf (%.2lf), validate_mse_delta: %.4lf\n", iter, validate_err, test_err, test_ste, delta);
