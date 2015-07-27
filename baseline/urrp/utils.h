@@ -162,7 +162,7 @@ public:
     int userMin = 0;
     int itemMin = 0;
 
-    int maxWords = 5000; // Dictionary size
+    int maxWords = 3000; // Dictionary size
     std::vector < std::pair<std::string, int> > whichWords;
     for (std::map<std::string, int>::iterator it = wordCount.begin(); it != wordCount.end(); it++)
       whichWords.push_back(*it);
