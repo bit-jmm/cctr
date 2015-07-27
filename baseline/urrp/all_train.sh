@@ -13,7 +13,7 @@ do
         elif (($i > $end)); then
             break
         fi
-        filename=`basename $file`
-        nohup ./urrp -i $file > ./log/"$filename".log 2>&1 &
+        #filename=`basename $file`
+        ./urrp -i $file
     fi
 done

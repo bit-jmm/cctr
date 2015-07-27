@@ -339,7 +339,7 @@ void URRP::train()
   }
   readout_theta_phi();
   topic_words();
-  for (int iter = 1; iter < max_iter; iter++) {
+  for (int iter = burn_in; iter < max_iter; iter++) {
     // sample topic and attitude for all words and ratings
     sample_attitudes();
     // update hyper-parameters
