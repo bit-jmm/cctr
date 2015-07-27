@@ -338,6 +338,7 @@ void URRP::train()
     printf("LDA stage: iter %d\n", i);
   }
   readout_theta_phi();
+  topic_words();
   for (int iter = 1; iter < max_iter; iter++) {
     // sample topic and attitude for all words and ratings
     sample_attitudes();
@@ -345,11 +346,10 @@ void URRP::train()
     update_alpha();
     update_lambda();
     // get statistics after burn-in
-    if ((iter > burn_in) && (iter % sample_lag == 0))
+    if (iter % sample_lag == 0)
     {
       readout_theta_xi();
       evaluate(iter);
-      topic_words();
     }
   }
 }
