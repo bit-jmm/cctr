@@ -1,6 +1,6 @@
 #!/bin/bash
 num=$1
-step=$1
+step=$2
 begin=$[($num - 1) * $step + 1]
 end=$[$num * $step]
 i=0
