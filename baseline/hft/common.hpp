@@ -139,7 +139,10 @@ public:
         }
 
         // item number up to 5000
-        if (bCounts.size()==5000 && bCounts.find(bName)==bCounts.end()) {
+        // user number up to 50000, item number up to 5000
+        if ( (bCounts.size()==5000 || uCounts.size()==50000) &&
+            (bCounts.find(bName)==bCounts.end() || uCounts.find(uName)==uCounts.end()) )
+        {
           continue;
         }
         for (int w = 0; w < nw; w++)
@@ -219,7 +222,7 @@ public:
         std::stringstream ss(line);
         ss >> uName >> bName >> value >> voteTime >> nw;
 
-        if(bCounts.find(bName) == bCounts.end()) {
+        if(uCounts.find(uName) == uCounts.end() || bCounts.find(bName) == bCounts.end()) {
           continue;
         }
 
