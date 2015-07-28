@@ -15,10 +15,9 @@ int main(int argc, char** argv)
   double alpha = 50.0/K;
   double beta = 200.0/3000;
   double lambda = 200.0/3000;
-  int max_iter = 600;
-  int burn_in = 500;
+  int max_iter = 100;
+  int burn_in = 50;
   int sample_lag = 1;
-
   vector<string> inputfiles;
 
   parse_parameters(argc, (char * const *)argv, inputfiles, alpha, beta, lambda, K, max_iter, burn_in, sample_lag);

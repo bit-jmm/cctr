@@ -58,6 +58,7 @@ public:
   std::map<std::string, int> word2id; // Map each word to its integer ID
   std::map<int, std::string> id2word; // Inverse of the above map
 
+
   std::string input_filename;
 
   Corpus(std::vector<std::string> ratingFiles)
@@ -87,8 +88,9 @@ public:
     }
     stop_file.close();
 
-    std::vector<std::string> lines;
     std::string line;
+
+    std::vector<std::string> lines;
     for (std::vector<std::string>::iterator it=ratingFiles.begin(); it!=ratingFiles.end();++it)
     {
       lines = readLines(*it);
@@ -164,7 +166,7 @@ public:
     int userMin = 0;
     int itemMin = 0;
 
-    int maxWords = 3000; // Dictionary size
+    int maxWords = 5000; // Dictionary size
     std::vector < std::pair<std::string, int> > whichWords;
     for (std::map<std::string, int>::iterator it = wordCount.begin(); it != wordCount.end(); it++)
       whichWords.push_back(*it);

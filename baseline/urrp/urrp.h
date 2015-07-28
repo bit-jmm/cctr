@@ -6,6 +6,7 @@
 using namespace boost;
 typedef multi_array<int, 3> ThreeIntArray;
 typedef multi_array<int, 2> TwoIntArray;
+typedef multi_array<int, 1> OneIntArray;
 typedef multi_array<double, 3> ThreeDoubleArray;
 typedef multi_array<double, 2> TwoDoubleArray;
 
@@ -38,13 +39,17 @@ private:
 
   // times that topic k has been assigned to word w
   TwoIntArray* nkw;
+  OneIntArray * nk;
 
   // times that topic k has been assigned to words in reviews written by user u
   TwoIntArray* nuk;
+  OneIntArray * nu;
   // times that attitude k assigned to ratings by user u
   TwoIntArray* muk;
+  OneIntArray * mu;
   // times that rating s assigned to item v when attitude is k
   ThreeIntArray* ckvs;
+  TwoIntArray* ckv;
 
   TwoDoubleArray* theta;
   TwoDoubleArray* phi;
@@ -72,6 +77,11 @@ public:
     this->alpha = new double[K];
     this->beta = new double[nWords];
     this->lambda = new double[S];
+
+    this->nk = new OneIntArray(extents[K]);
+    this->nu = new OneIntArray(extents[nUsers]);
+    this->mu = new OneIntArray(extents[nUsers]);
+    this->ckv = new TwoIntArray(extents[K][nItems]);
 
     this->nkw = new TwoIntArray(extents[K][nWords]);
     this->nuk = new TwoIntArray(extents[nUsers][K]);
@@ -125,16 +135,15 @@ public:
   }
 
   void init_model();
-  void sample_topics();
-  void sample_attitudes();
+  void sample_topics(bool with_attitude);
+  void sample_attitudes(bool with_topic);
   void evaluate(int iter);
-  int get_nk(int k);
-  int get_nu(int u);
-  int get_mu(int u);
-  int get_ckv(int k, int v);
-  void readout_theta_phi();
-  void readout_theta_xi();
-  void update_alpha();
+  void readout_topic_theta(bool with_attitude);
+  void readout_attitude_theta(bool with_topic);
+  void readout_phi();
+  void readout_xi();
+  void update_alpha(bool with_topic);
+  void update_alpha_by_topic();
   void update_beta();
   void update_lambda();
   double predict_with_expect(rating* vi);
@@ -148,9 +157,13 @@ public:
     delete[] beta;
     delete[] lambda;
     delete nkw;
+    delete nk;
     delete nuk;
+    delete nu;
     delete muk;
+    delete mu;
     delete ckvs;
+    delete ckv;
     delete theta;
     delete phi;
     delete xi;

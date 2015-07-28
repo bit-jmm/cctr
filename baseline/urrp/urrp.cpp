@@ -31,6 +31,8 @@ void URRP::init_model()
     (*it)->attitude = attitude;
     (*muk)[user][attitude]++;
     (*ckvs)[attitude][item][rating]++;
+    (*mu)[user]++;
+    (*ckv)[attitude][item]++;
 
     int topic = rand() % K;
     for(vector< pair<int,int> >::iterator it2=words->begin(); it2 != words->end(); it2++)
@@ -38,12 +40,14 @@ void URRP::init_model()
       (*it2).second = topic;
       (*nuk)[user][topic]++;
       (*nkw)[topic][(*it2).first]++;
+      (*nu)[user]++;
+      (*nk)[topic]++;
       topic = rand() % K;
     }
   }
 }
 
-void URRP::sample_attitudes()
+void URRP::sample_attitudes(bool with_topic)
 {
   double* p = new double[K];
   for(vector<rating*>::iterator it=trainratings.begin(); it != trainratings.end(); it++)
@@ -56,15 +60,17 @@ void URRP::sample_attitudes()
     int current_attitude = (*it)->attitude;
     (*muk)[user][current_attitude]--;
     (*ckvs)[current_attitude][item][rating]--;
+    (*mu)[user]--;
+    (*ckv)[current_attitude][item]--;
 
-    //int nu = get_nu(user);
-    int mu = get_mu(user);
     int k=0;
-    #pragma omp parallel for
+    //#pragma omp parallel for
     for(k=0; k<K; k++)
     {
-      //p[k] = ((*nuk)[user][k] + (*muk)[user][k] + alpha[k]) / (nu + mu + sum_alpha) * (((*ckvs)[k][item][rating] + lambda[rating]) / (get_ckv(k, item) + sum_lambda));
-      p[k] = ((*muk)[user][k] + alpha[k]) / (mu + sum_alpha) * (((*ckvs)[k][item][rating] + lambda[rating]) / (get_ckv(k, item) + sum_lambda));
+      if(with_topic)
+        p[k] = ((*nuk)[user][k] + (*muk)[user][k] + alpha[k]) / ((*nu)[user] + (*mu)[user] + sum_alpha) * (((*ckvs)[k][item][rating] + lambda[rating]) / ((*ckv)[k][item] + sum_lambda));
+      else
+        p[k] = ((*muk)[user][k] + alpha[k]) / ((*mu)[user] + sum_alpha) * (((*ckvs)[k][item][rating] + lambda[rating]) / ((*ckv)[k][item] + sum_lambda));
     }
 
     for(k=1; k<K; k++)
@@ -81,11 +87,13 @@ void URRP::sample_attitudes()
     (*it)->attitude = k;
     (*muk)[user][k]++;
     (*ckvs)[k][item][rating]++;
+    (*mu)[user]++;
+    (*ckv)[k][item]++;
   }
   delete[] p;
 }
 
-void URRP::sample_topics()
+void URRP::sample_topics(bool with_attitude)
 {
   double* p = new double[K];
   for(vector<rating*>::iterator it=trainratings.begin(); it != trainratings.end(); it++)
@@ -93,21 +101,21 @@ void URRP::sample_topics()
     int user = (*it)->user;
     vector< pair<int,int> >* words = &((*it)->words);
 
-    int nu = get_nu(user);
-    //int mu = get_mu(user);
-
     for(vector< pair<int,int> >::iterator it2=words->begin(); it2 != words->end(); it2++)
     {
       int w = (*it2).first;
       int current_topic = (*it2).second;
       (*nuk)[user][current_topic]--;
       (*nkw)[current_topic][w]--;
+      (*nu)[user]--;
+      (*nk)[current_topic]--;
       int k=0;
-    #pragma omp parallel for
       for(k=0; k<K; k++)
       {
-        //p[k] = (((*nuk)[user][k] + (*muk)[user][k] + alpha[k]) / (nu + mu + sum_alpha) * (((*nkw)[k][w] + beta[w]) / (get_nk(k) + sum_beta)));
-        p[k] = (((*nuk)[user][k] + alpha[k]) / (nu + sum_alpha) * (((*nkw)[k][w] + beta[w]) / (get_nk(k) + sum_beta)));
+        if(with_attitude)
+          p[k] = (((*nuk)[user][k] + (*muk)[user][k] + alpha[k]) / ((*nu)[user] + (*mu)[user] + sum_alpha) * (((*nkw)[k][w] + beta[w]) / ((*nk)[k] + sum_beta)));
+        else
+          p[k] = (((*nuk)[user][k] + alpha[k]) / ((*nu)[user] + sum_alpha) * (((*nkw)[k][w] + beta[w]) / ((*nk)[k] + sum_beta)));
       }
       for(k=1; k<K; k++)
         p[k] += p[k-1];
@@ -123,86 +131,57 @@ void URRP::sample_topics()
       (*it2).second = k;
       (*nuk)[user][k]++;
       (*nkw)[k][w]++;
+      (*nu)[user]++;
+      (*nk)[k]++;
     }
   }
   delete[] p;
 }
 
-int URRP::get_nk(int k)
+void URRP::readout_topic_theta(bool with_attitude)
 {
-  int val = 0, w;
-  #pragma omp parallel for reduction (+:val)
-  for(w=0; w<nWords; w++)
-  {
-    val += (*nkw)[k][w];
-  }
-  return val;
-}
-
-int URRP::get_nu(int u)
-{
-  int val = 0, k;
-  #pragma omp parallel for reduction (+:val)
-  for(k=0; k<K; k++)
-  {
-    val += (*nuk)[u][k];
-  }
-  return val;
-}
-
-int URRP::get_mu(int u)
-{
-  int val = 0, k;
-  #pragma omp parallel for reduction (+:val)
-  for(k=0; k<K; k++)
-  {
-    val += (*muk)[u][k];
-  }
-  return val;
-}
-
-int URRP::get_ckv(int k, int v)
-{
-  int val = 0, s;
-  #pragma omp parallel for reduction (+:val)
-  for(s=0; s<S; s++)
-  {
-    val += (*ckvs)[k][v][s];
-  }
-  return val;
-}
-
-void URRP::readout_theta_phi()
-{
-  int u,k,w;
+  int u,k;
 #pragma omp parallel for collapse(2)
   for(u=0; u<nUsers; u++)
     for(k=0; k<K; k++)
-      (*theta)[u][k] = ((*nuk)[u][k] + alpha[k]) / (get_nu(u) + sum_alpha);
-      //(*theta)[u][k] = ((*nuk)[u][k] + (*muk)[u][k] + alpha[k]) / (get_nu(u) + get_mu(u) + sum_alpha);
+      if(with_attitude)
+        (*theta)[u][k] = ((*nuk)[u][k] + (*muk)[u][k] + alpha[k]) / ((*nu)[u] + (*mu)[u] + sum_alpha);
+      else
+        (*theta)[u][k] = ((*nuk)[u][k] + alpha[k]) / ((*nu)[u] + sum_alpha);
+}
 
+void URRP::readout_attitude_theta(bool with_topic)
+{
+  int u,k;
+#pragma omp parallel for collapse(2)
+  for(u=0; u<nUsers; u++)
+    for(k=0; k<K; k++)
+      if(with_topic)
+        (*theta)[u][k] = ((*nuk)[u][k] + (*muk)[u][k] + alpha[k]) / ((*nu)[u] + (*mu)[u] + sum_alpha);
+      else
+        (*theta)[u][k] = ((*muk)[u][k] + alpha[k]) / ((*mu)[u] + sum_alpha);
+}
+
+void URRP::readout_phi()
+{
+  int k,w;
 #pragma omp parallel for collapse(2)
   for(k=0; k<K; k++)
     for(w=0; w<nWords; w++)
-      (*phi)[k][w] = ((*nkw)[k][w] + beta[w]) / (get_nk(k) + sum_beta);
+      (*phi)[k][w] = ((*nkw)[k][w] + beta[w]) / ((*nk)[k] + sum_beta);
 }
 
-void URRP::readout_theta_xi()
+void URRP::readout_xi()
 {
-  int u,v,k,s;
-#pragma omp parallel for collapse(2)
-  for(u=0; u<nUsers; u++)
-    for(k=0; k<K; k++)
-      (*theta)[u][k] = ((*muk)[u][k] + alpha[k]) / (get_mu(u) + sum_alpha);
-      //(*theta)[u][k] = ((*nuk)[u][k] + (*muk)[u][k] + alpha[k]) / (get_nu(u) + get_mu(u) + sum_alpha);
+  int v,k,s;
 #pragma omp parallel for collapse(3)
   for(k=0; k<K; k++)
     for(v=0; v<nItems; v++)
       for(s=0; s<S; s++)
-        (*xi)[k][v][s] = ((*ckvs)[k][v][s] + lambda[s]) / (get_ckv(k,v) + sum_lambda);
+        (*xi)[k][v][s] = ((*ckvs)[k][v][s] + lambda[s]) / ((*ckv)[k][v] + sum_lambda);
 }
 
-void URRP::update_alpha()
+void URRP::update_alpha_by_topic()
 {
   int k,u;
   double ak, numerator, denominator;
@@ -212,8 +191,8 @@ void URRP::update_alpha()
     numerator = 0, denominator = 0;
     #pragma omp parallel for reduction (+:numerator,denominator)
     for (u = 0; u < nUsers; u++) {
-      numerator += digamma((*muk)[u][k] + ak) - digamma(ak);
-      denominator += digamma(get_mu(u) + sum_alpha) - digamma(sum_alpha);
+      numerator += digamma((*nuk)[u][k] + ak) - digamma(ak);
+      denominator += digamma((*nu)[u] + sum_alpha) - digamma(sum_alpha);
       //numerator += digamma((*nuk)[u][k] + (*muk)[u][k] + ak) - digamma(ak);
       //denominator += digamma(get_nu(u) + get_mu(u) + sum_alpha) - digamma(sum_alpha);
     }
@@ -225,7 +204,37 @@ void URRP::update_alpha()
   {
     sum_alpha += alpha[k];
   }
+}
 
+void URRP::update_alpha(bool with_topic)
+{
+  int k,u;
+  double ak, numerator, denominator;
+  //update alpha
+  for (k = 0; k < K; k++) {
+    ak = alpha[k];
+    numerator = 0, denominator = 0;
+    #pragma omp parallel for reduction (+:numerator,denominator)
+    for (u = 0; u < nUsers; u++) {
+      if (with_topic)
+      {
+        numerator += digamma((*nuk)[u][k] + (*muk)[u][k] + ak) - digamma(ak);
+        denominator += digamma((*nu)[u] + (*mu)[u] + sum_alpha) - digamma(sum_alpha);
+      }
+      else
+      {
+        numerator += digamma((*muk)[u][k] + ak) - digamma(ak);
+        denominator += digamma((*mu)[u] + sum_alpha) - digamma(sum_alpha);
+      }
+    }
+    if (numerator != 0)
+      alpha[k] = ak * (numerator / denominator);
+  }
+  sum_alpha = 0;
+  for (k = 0; k < K; k++)
+  {
+    sum_alpha += alpha[k];
+  }
 }
 
 void URRP::update_beta()
@@ -236,16 +245,16 @@ void URRP::update_beta()
   for (w = 0; w < nWords; w++) {
     betaw = beta[w];
     numerator = 0, denominator = 0;
-    #pragma omp parallel for reduction (+:numerator,denominator)
+    //#pragma omp parallel for reduction (+:numerator,denominator)
     for (k = 0; k < K; k++) {
       numerator += digamma((*nkw)[k][w] + betaw) - digamma(betaw);
-      denominator += digamma(get_nk(k) + sum_beta) - digamma(sum_beta);
+      denominator += digamma((*nk)[k] + sum_beta) - digamma(sum_beta);
     }
     if (numerator != 0)
       beta[w] = betaw * (numerator / denominator);
   }
   double tmp_sum_beta = 0;
-  #pragma omp parallel for reduction (+:tmp_sum_beta)
+  //#pragma omp parallel for reduction (+:tmp_sum_beta)
   for (w = 0; w < nWords; w++)
   {
     tmp_sum_beta += beta[w];
@@ -267,7 +276,7 @@ void URRP::update_lambda()
       for(v=0; v<nItems; v++)
       {
         numerator += digamma((*ckvs)[k][v][s] + lambdas) - digamma(lambdas);
-        denominator += digamma(get_ckv(k, v) + sum_lambda) - digamma(sum_lambda);
+        denominator += digamma((*ckv)[k][v] + sum_lambda) - digamma(sum_lambda);
       }
     if (numerator != 0)
       lambda[s] = lambdas * (numerator / denominator);
@@ -329,33 +338,40 @@ void URRP::evaluate(int iter)
 void URRP::train()
 {
   init_model();
-  readout_theta_xi();
+  readout_attitude_theta(false);
+  readout_xi();
   evaluate(0);
   // learn topic distribution by lda
-  for(int i=0; i<burn_in; i++)
+  for(int i=1; i<=burn_in; i++)
   {
-    sample_topics();
+    sample_topics(false);
     if (i % 10 == 0)
     {
       printf("LDA stage: iter %d\n", i);
       fflush(stdout);
     }
   }
-  readout_theta_phi();
+  readout_topic_theta(false);
+  readout_phi();
   topic_words();
-  for (int iter = burn_in; iter < max_iter; iter++) {
+  for (int iter = 0; iter <= max_iter; iter++) {
     // sample topic and attitude for all words and ratings
-    sample_attitudes();
+    sample_attitudes(false);
+    sample_topics(false);
     // update hyper-parameters
-    update_alpha();
+    update_alpha(true);
+    update_beta();
     update_lambda();
     // get statistics after burn-in
     if (iter % sample_lag == 0)
     {
-      readout_theta_xi();
+      readout_attitude_theta(false);
+      readout_phi();
+      readout_xi();
       evaluate(iter);
     }
   }
+  topic_words();
 }
 
 bool word_prob_com(pair<int, double> p1, pair<int, double> p2)
