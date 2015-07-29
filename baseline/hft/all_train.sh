@@ -14,6 +14,7 @@ do
             break
         fi
         filename=`basename $file`
-        nohup ./train -i $file > ./log/"$filename".log 2>&1 &
+        #nohup ./train -i $file > ./log/"$filename".log 2>&1 &
+        ./train -i $file
     fi
 done

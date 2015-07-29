@@ -14,6 +14,7 @@ do
             break
         fi
         filename=`basename $file`
-        nohup ./urrp -i $file -m 50 -n 50 -s 1 > log/"$filename".log 2>&1 &
+        #nohup ./urrp -i $file -m 50 -n 50 -s 1 > log/"$filename".log 2>&1 &
+        ./urrp -i $file -m 50 -n 50 -s 1
     fi
 done

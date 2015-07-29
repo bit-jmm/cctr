@@ -140,11 +140,11 @@ public:
 
         // item number up to 5000
         // user number up to 50000, item number up to 5000
-        if ( (bCounts.size()==5000 || uCounts.size()==50000) &&
-            (bCounts.find(bName)==bCounts.end() || uCounts.find(uName)==uCounts.end()) )
-        {
-          continue;
-        }
+        //if ( (bCounts.size()==5000 || uCounts.size()==50000) &&
+            //(bCounts.find(bName)==bCounts.end() || uCounts.find(uName)==uCounts.end()) )
+        //{
+          //continue;
+        //}
         for (int w = 0; w < nw; w++)
         {
           ss >> sWord;
