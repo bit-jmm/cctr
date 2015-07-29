@@ -666,7 +666,7 @@ int main(int argc, char** argv)
   topicCorpus ec(&corp, K, // K
                  latentReg, // latent topic regularizer
                  lambda); // lambda
-  ec.train(50, 50);
+  ec.train(10, 50);
   //ec.save(modelPath, predictionPath);
 
   return 0;
